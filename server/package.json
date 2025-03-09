@@ -1,0 +1,31 @@
+{
+  "name": "chatgpt-github-integration-server",
+  "version": "1.0.0",
+  "description": "Server for ChatGPT GitHub Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "passport": "^0.6.0",
+    "passport-github2": "^0.1.12",
+    "morgan": "^1.10.0",
+    "winston": "^3.8.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "axios": "^1.3.4",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "redis": "^4.6.5",
+    "connect-redis": "^7.0.1",
+    "simple-git": "^3.17.0",
+    "jsonwebtoken": "^9.0.0",
+    "archiver": "^5.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
+}
