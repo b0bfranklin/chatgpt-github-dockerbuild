@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatgpt-github-integration
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - SERVER_DOMAIN=${SERVER_DOMAIN:-your-server-domain.com}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - CLIENT_ORIGIN=${CLIENT_ORIGIN:-https://chat.openai.com}
+      - ENABLE_SSL=${ENABLE_SSL:-false}
+      - EMAIL_ADDRESS=${EMAIL_ADDRESS}
+    volumes:
+      - ./data/logs:/opt/chatgpt-github-integration/logs
+      - ./data/cache:/opt/chatgpt-github-integration/cache
+      - letsencrypt:/etc/letsencrypt
+    networks:
+      - chatgpt-github-net
+
+networks:
+  chatgpt-github-net:
+    driver: bridge
+
+volumes:
+  letsencrypt:
+    driver: local
