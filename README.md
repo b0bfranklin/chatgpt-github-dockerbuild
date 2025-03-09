@@ -2,6 +2,35 @@
 
 This repository contains Docker configurations for running the ChatGPT-GitHub Integration server component with built-in extension distribution capabilities. This integration allows you to save ChatGPT conversations directly to GitHub repositories.
 
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [How to Use with Docker](#how-to-use-with-docker)
+  - [Setting Up GitHub OAuth](#setting-up-github-oauth)
+  - [Environment Setup](#environment-setup)
+  - [Running the Server](#running-the-server)
+- [Automated Deployment](#automated-deployment)
+  - [Using the Deployment Script](#using-the-deployment-script)
+  - [Deployment Options](#deployment-options)
+- [Browser Extension Distribution](#browser-extension-distribution)
+  - [Accessing the Extension Download Page](#accessing-the-extension-download-page)
+  - [How It Works](#how-it-works)
+  - [Extension File Structure](#extension-file-structure)
+  - [Building the Extension Manually](#building-the-extension-manually)
+- [Updating Your Installation](#updating-your-installation)
+  - [Automatic Update](#automatic-update)
+  - [Manual Update](#manual-update)
+  - [Post-Update Steps](#post-update-steps)
+- [Configuration Options](#configuration-options)
+  - [Environment Variables](#environment-variables)
+- [Secure Production Deployment](#secure-production-deployment)
+- [Troubleshooting](#troubleshooting)
+  - [Server Issues](#server-issues)
+  - [Docker-Specific Issues](#docker-specific-issues)
+  - [Extension Issues](#extension-issues)
+
 ## Project Structure
 
 ```
@@ -10,6 +39,7 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
 ├── docker-compose.yml            # Docker Compose configuration
 ├── docker-entrypoint.sh          # Startup script for the container
 ├── update.sh                     # Script to update the installation
+├── deploy.sh                     # Script for automated deployment
 ├── extension.zip                 # Packaged browser extension (generated)
 ├── nginx/                        # Nginx configuration files
 │   └── chatgpt-github-integration # Nginx site configuration
@@ -28,7 +58,8 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
 │   ├── popup.js                  # Extension popup JavaScript
 │   ├── background.js             # Extension background script
 │   ├── content.js                # Extension content script
-│   └── styles.css                # Extension styles
+│   ├── styles.css                # Extension styles (may be generated)
+│   └── browser-extension-styles.css # Alternative CSS source file
 └── README.md                     # This file
 ```
 
@@ -40,7 +71,7 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
 - Docker Compose
 - GitHub OAuth Application credentials
 
-## How to Use with Docker
+### How to Use with Docker
 
 This project uses Docker Compose to manage the container ecosystem. Here's a complete guide to get everything up and running from scratch:
 
@@ -182,6 +213,50 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
+## Automated Deployment
+
+For a fully automated deployment process, you can use the included `deploy.sh` script. This allows you to set up the entire solution on a fresh VM or LXC container with a single command.
+
+### Using the Deployment Script
+
+1. Download the script to your server:
+   ```bash
+   curl -O https://raw.githubusercontent.com/yourusername/chatgpt-github-integration/main/deploy.sh
+   chmod +x deploy.sh
+   ```
+
+2. Run the script with your GitHub OAuth credentials and domain:
+   ```bash
+   ./deploy.sh \
+     --github-client-id YOUR_CLIENT_ID \
+     --github-client-secret YOUR_CLIENT_SECRET \
+     --server-domain your-domain.com \
+     --email your-email@example.com \
+     --enable-ssl
+   ```
+
+3. The script will:
+   - Install Docker and Docker Compose
+   - Create all necessary configuration files
+   - Build and start the Docker containers
+   - Set up SSL with Let's Encrypt (if enabled)
+   - Build the browser extension
+
+4. Once completed, your server will be accessible at your domain, with the extension download page available at `https://your-domain.com/extension`.
+
+### Deployment Options
+
+The deployment script accepts the following parameters:
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `--github-client-id` | GitHub OAuth application client ID | Yes |
+| `--github-client-secret` | GitHub OAuth application client secret | Yes |
+| `--server-domain` | Your server's domain name | Yes |
+| `--email` | Your email (for SSL certificate) | Yes, if SSL enabled |
+| `--enable-ssl` | Enable HTTPS with Let's Encrypt | No (default: disabled) |
+| `--install-dir` | Installation directory | No (default: /opt/chatgpt-github-integration) |
+
 ## Browser Extension Distribution
 
 The server includes a built-in extension distribution system, allowing users to download the browser extension directly from your server.
@@ -198,6 +273,8 @@ This page provides:
 - A download button for the extension ZIP file
 - Installation instructions specific to your server
 - Step-by-step guidance for installing the extension in various browsers
+
+When users click the download button, the browser will automatically start downloading the `extension.zip` file, which contains the packaged browser extension.
 
 ### How It Works
 
@@ -217,8 +294,11 @@ The extension consists of the following files:
 - `popup.js`: JavaScript for the extension popup
 - `background.js`: Background script for the extension
 - `content.js`: Content script that injects into ChatGPT
-- `styles.css`: CSS styles for the extension UI
+- `styles.css`: CSS styles for the extension UI (may be generated)
+- `browser-extension-styles.css`: Alternative CSS source file for the extension UI
 - `images/`: Directory containing icons in different sizes
+
+Note that the system looks for either `styles.css` or `browser-extension-styles.css`. If only the latter exists, it will be automatically copied to `styles.css` during the build process. This provides flexibility while ensuring the extension has the necessary visual styling to function correctly.
 
 ### Building the Extension Manually
 
