@@ -1,0 +1,77 @@
+// popup.html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT GitHub Integration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      width: 300px;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 18px;
+      margin-top: 0;
+    }
+    .status {
+      margin: 16px 0;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .status-connected {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    .status-disconnected {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    button {
+      background-color: #0366d6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #0255b3;
+    }
+    .server-url {
+      margin-top: 16px;
+    }
+    .server-url input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>ChatGPT GitHub Integration</h1>
+  
+  <div id="status" class="status status-disconnected">
+    Not connected to GitHub
+  </div>
+  
+  <div id="user-info" style="display: none;">
+    <p>Connected as: <span id="username"></span></p>
+  </div>
+  
+  <button id="login-button">Connect to GitHub</button>
+  <button id="logout-button" style="display: none;">Disconnect</button>
+  
+  <div class="server-url">
+    <label for="server-url">Integration Server URL:</label>
+    <input type="text" id="server-url" placeholder="https://your-server-domain.com">
+    <button id="save-url-button" style="margin-top: 8px; width: 100%;">Save URL</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
