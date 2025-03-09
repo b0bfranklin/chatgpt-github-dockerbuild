@@ -9,18 +9,17 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
 ├── Dockerfile                    # Docker image definition for the server
 ├── docker-compose.yml            # Docker Compose configuration
 ├── docker-entrypoint.sh          # Startup script for the container
-├── build-extension.sh            # Script to prepare extension files
 ├── update.sh                     # Script to update the installation
 ├── extension.zip                 # Packaged browser extension (generated)
 ├── nginx/                        # Nginx configuration files
 │   └── chatgpt-github-integration # Nginx site configuration
 ├── server/                       # Server component files
 │   ├── package.json              # Node.js dependencies
-│   ├── server.js                 # Main server code (add extension zip endpoint here)
-│   ├── server_extension_zip.js   # Extension download functionality (to be added to server.js)
+│   ├── server.js                 # Main server code with extension distribution functionality
 │   └── .env.example              # Environment variables template
-├── extension/                    # Generated extension files (not committed to git)
-│   ├── images/                   # Extension icons
+├── extension/                    # Extension files
+│   ├── build-extension.sh        # Script to prepare and package extension files
+│   ├── images/                   # Extension icons (generated)
 │   │   ├── icon16.png            # Small GitHub icon
 │   │   ├── icon48.png            # Medium GitHub icon
 │   │   └── icon128.png           # Large GitHub icon
@@ -115,10 +114,12 @@ docker-compose logs -f server
 
 ```bash
 # Make the build script executable
-chmod +x build-extension.sh
+chmod +x extension/build-extension.sh
 
 # Run the build script to prepare extension files
+cd extension
 ./build-extension.sh
+cd ..
 ```
 
 ### Step 6: Managing the Docker Container
@@ -207,34 +208,32 @@ The extension distribution system works by:
 3. Automatically building the extension files if they don't exist
 4. Setting the correct headers for browser download
 
-### Adding Extension Distribution to Your Server
+### Extension File Structure
 
-To enable the extension distribution functionality:
+The extension consists of the following files:
 
-1. Add the code from `server_extension_zip.js` to your `server.js` file (before the `app.listen()` call)
-2. Install the required dependency: `npm install --save archiver`
-3. Make sure the ZIP utility is available in your Docker container:
-   ```bash
-   docker-compose exec server apt-get update && apt-get install -y zip
-   ```
-4. Restart your server:
-   ```bash
-   docker-compose restart server
-   ```
+- `manifest.json`: Defines extension properties, permissions and entry points
+- `popup.html`: HTML for the extension popup
+- `popup.js`: JavaScript for the extension popup
+- `background.js`: Background script for the extension
+- `content.js`: Content script that injects into ChatGPT
+- `styles.css`: CSS styles for the extension UI
+- `images/`: Directory containing icons in different sizes
 
 ### Building the Extension Manually
 
 If you prefer to create the extension files manually:
 
 ```bash
+cd extension
 chmod +x build-extension.sh
 ./build-extension.sh
 ```
 
 This will:
-1. Create the extension files in the `extension` directory
-2. Download GitHub icons from the specified repositories
-3. Generate an `extension.zip` file for distribution
+1. Ensure all necessary extension files are present
+2. Download GitHub icons from the specified repositories if needed
+3. Generate an `extension.zip` file in the parent directory for distribution
 
 ## Updating Your Installation
 
@@ -289,7 +288,9 @@ If you prefer to update manually, follow these steps:
 
 4. Update the browser extension:
    ```bash
+   cd extension
    ./build-extension.sh
+   cd ..
    ```
 
 5. Reload the extension in your browser
