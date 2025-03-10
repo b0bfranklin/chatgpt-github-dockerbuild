@@ -1,56 +1,35 @@
-server {
-    listen 80;
-    server_name your-server-domain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name your-server-domain.com;
-
-    # SSL configuration with improved security
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_tickets off;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-
-    # HSTS (15768000 seconds = 6 months)
-    add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; preload" always;
-    
-    # Additional security headers
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-    # Main proxy configuration
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-        
-        # Support larger file uploads
-        client_max_body_size 10M;
-        
-        # Timeouts to prevent hanging connections
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-    
-    # Deny access to hidden files
-    location ~ /\. {
-        deny all;
-        return 404;
-    }
+{
+  "name": "chatgpt-github-integration-server",
+  "version": "1.0.0",
+  "description": "Server for ChatGPT GitHub Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development nodemon server.js",
+    "audit": "npm audit --production",
+    "update": "npm update --save"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "passport": "^0.6.0",
+    "passport-github2": "^0.1.12",
+    "morgan": "^1.10.0",
+    "winston": "^3.8.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "axios": "^1.3.4",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "redis": "^4.6.5",
+    "connect-redis": "^7.0.1",
+    "simple-git": "^3.17.0",
+    "jsonwebtoken": "^9.0.0",
+    "archiver": "^5.3.1",
+    "helmet": "^6.1.5",
+    "express-rate-limit": "^6.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
 }
