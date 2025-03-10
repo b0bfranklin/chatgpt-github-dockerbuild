@@ -15,6 +15,8 @@ const RedisStore = require('connect-redis').default;
 const simpleGit = require('simple-git');
 const jwt = require('jsonwebtoken');
 const archiver = require('archiver');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Initialize logger
@@ -30,8 +32,23 @@ const logger = winston.createLogger({
   ]
 });
 
+// Security logger for auth and API events
+const securityLogger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: '../logs/security.log' })
+  ]
+});
+
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
+    format: winston.format.simple()
+  }));
+  securityLogger.add(new winston.transports.Console({
     format: winston.format.simple()
   }));
 }
@@ -46,6 +63,43 @@ redisClient.connect().catch(console.error);
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Use Helmet to set security headers
+app.use(helmet());
+
+// Configure Content Security Policy
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:"],
+    connectSrc: ["'self'", "https://api.github.com"]
+  }
+}));
+
+// Apply global rate limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+
+// Apply to all routes
+app.use(globalLimiter);
+
+// Stricter rate limiting for authentication routes
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 requests per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many authentication attempts, please try again later'
+});
+
+app.use('/auth/', authLimiter);
 
 // Middleware
 app.use(cors({
@@ -74,12 +128,34 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// GitHub OAuth Strategy
+// Log authentication attempts
+app.use('/auth/*', (req, res, next) => {
+  securityLogger.info('Authentication attempt', {
+    ip: req.ip,
+    path: req.path,
+    method: req.method,
+    userAgent: req.get('User-Agent')
+  });
+  next();
+});
+
+// Log API requests
+app.use('/api/*', (req, res, next) => {
+  securityLogger.info('API request', {
+    ip: req.ip,
+    path: req.path,
+    method: req.method,
+    authenticated: req.isAuthenticated()
+  });
+  next();
+});
+
+// GitHub OAuth Strategy with reduced scope
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
     callbackURL: process.env.GITHUB_CALLBACK_URL,
-    scope: ['repo', 'user', 'workflow']
+    scope: ['repo'] // Reduced from ['repo', 'user', 'workflow']
   },
   function(accessToken, refreshToken, profile, done) {
     const user = {
@@ -89,6 +165,13 @@ passport.use(new GitHubStrategy({
       accessToken,
       emails: profile.emails
     };
+    
+    // Log successful authentication
+    securityLogger.info('User authenticated', {
+      username: profile.username,
+      id: profile.id
+    });
+    
     return done(null, user);
   }
 ));
