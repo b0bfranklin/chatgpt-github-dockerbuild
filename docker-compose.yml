@@ -19,12 +19,25 @@ services:
       - CLIENT_ORIGIN=${CLIENT_ORIGIN:-https://chat.openai.com}
       - ENABLE_SSL=${ENABLE_SSL:-false}
       - EMAIL_ADDRESS=${EMAIL_ADDRESS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-"RedisSecurePassword!"}
     volumes:
       - ./data/logs:/opt/chatgpt-github-integration/logs
       - ./data/cache:/opt/chatgpt-github-integration/cache
       - letsencrypt:/etc/letsencrypt
     networks:
       - chatgpt-github-net
+    # Security enhancements
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Can't be fully read-only due to Redis, but we limit writable paths
+    tmpfs:
+      - /tmp
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
 networks:
   chatgpt-github-net:
@@ -33,3 +46,14 @@ networks:
 volumes:
   letsencrypt:
     driver: local
+
+# Uncomment the below section to use Docker secrets instead of environment variables
+# secrets:
+#   github_client_id:
+#     file: ./secrets/github_client_id.txt
+#   github_client_secret:
+#     file: ./secrets/github_client_secret.txt
+#   session_secret:
+#     file: ./secrets/session_secret.txt
+#   redis_password:
+#     file: ./secrets/redis_password.txt
