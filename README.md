@@ -23,9 +23,9 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
   - [Automatic Update](#automatic-update)
   - [Manual Update](#manual-update)
   - [Post-Update Steps](#post-update-steps)
+- [Security Considerations](#security-considerations)
 - [Configuration Options](#configuration-options)
   - [Environment Variables](#environment-variables)
-- [Secure Production Deployment](#secure-production-deployment)
 - [Troubleshooting](#troubleshooting)
   - [Server Issues](#server-issues)
   - [Docker-Specific Issues](#docker-specific-issues)
@@ -40,12 +40,13 @@ This repository contains Docker configurations for running the ChatGPT-GitHub In
 ├── docker-entrypoint.sh          # Startup script for the container
 ├── update.sh                     # Script to update the installation
 ├── deploy.sh                     # Script for automated deployment
+├── SECURITY.md                   # Security documentation
 ├── extension.zip                 # Packaged browser extension (generated)
 ├── nginx/                        # Nginx configuration files
 │   └── chatgpt-github-integration # Nginx site configuration
 ├── server/                       # Server component files
 │   ├── package.json              # Node.js dependencies
-│   ├── server.js                 # Main server code with extension distribution functionality
+│   ├── server.js                 # Main server code with security and extension distribution
 │   └── .env.example              # Environment variables template
 ├── extension/                    # Extension files
 │   ├── build-extension.sh        # Script to prepare and package extension files
@@ -196,12 +197,14 @@ GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 ENABLE_SSL=false
 EMAIL_ADDRESS=your-email@example.com
+REDIS_PASSWORD=your-secure-redis-password
 ```
 
 - Replace `your-server-domain.com` with your actual domain
 - Replace `your_github_client_id` and `your_github_client_secret` with your GitHub OAuth credentials
 - Set `ENABLE_SSL` to `true` if you want to enable HTTPS with Let's Encrypt
 - Provide your email address for Let's Encrypt notifications
+- Set a secure password for Redis
 
 ### Running the Server
 
@@ -237,6 +240,8 @@ For a fully automated deployment process, you can use the included `deploy.sh` s
 
 3. The script will:
    - Install Docker and Docker Compose
+   - Set up a firewall with UFW
+   - Configure Fail2Ban for brute force protection
    - Create all necessary configuration files
    - Build and start the Docker containers
    - Set up SSL with Let's Encrypt (if enabled)
@@ -256,6 +261,8 @@ The deployment script accepts the following parameters:
 | `--email` | Your email (for SSL certificate) | Yes, if SSL enabled |
 | `--enable-ssl` | Enable HTTPS with Let's Encrypt | No (default: disabled) |
 | `--install-dir` | Installation directory | No (default: /opt/chatgpt-github-integration) |
+| `--redis-password` | Custom Redis password | No (auto-generated if not provided) |
+| `--use-secrets` | Use Docker secrets instead of environment variables | No (default: disabled) |
 
 ## Browser Extension Distribution
 
@@ -338,9 +345,9 @@ You can easily update your ChatGPT GitHub Integration to the latest version usin
 
 The script performs the following actions:
 - Creates a backup of your current configuration
-- Pulls the latest changes from the repository
 - Rebuilds the Docker container with the updated code
 - Updates the browser extension files
+- Performs a security audit of dependencies
 - Verifies configuration changes
 
 ### Manual Update
@@ -354,7 +361,7 @@ If you prefer to update manually, follow these steps:
    cp -r nginx backup/
    ```
 
-2. Pull the latest changes:
+2. Pull the latest changes if using Git:
    ```bash
    git pull
    ```
@@ -388,6 +395,33 @@ After updating, you should:
 
 3. Test the functionality by connecting to GitHub and creating a test repository
 
+## Security Considerations
+
+The ChatGPT GitHub Integration handles access to your GitHub repositories, so security is a critical consideration. We have implemented several security measures to protect your data and access.
+
+For a comprehensive overview of security mechanisms and best practices, please review our [Security Documentation](SECURITY.md).
+
+### Key Security Features
+
+- **HTTPS Encryption**: All traffic is encrypted using TLS
+- **OAuth Security**: Secure implementation of GitHub OAuth
+- **Session Protection**: Redis-backed secure sessions
+- **Rate Limiting**: Protection against abuse and brute force attacks
+- **Docker Isolation**: Application runs in isolated containers
+- **Security Headers**: Modern security headers to prevent common web vulnerabilities
+
+### Security Recommendations
+
+For production deployments, we strongly recommend:
+
+1. **Always enable SSL**: Set `ENABLE_SSL=true` in your configuration
+2. **Use Docker Secrets**: Store sensitive credentials using Docker secrets
+3. **Configure a Firewall**: Restrict access to only necessary ports
+4. **Regular Updates**: Keep the application and its dependencies up-to-date
+5. **Follow the Security Hardening Checklist**: See the [Security Documentation](SECURITY.md)
+
+These measures will help ensure your deployment remains secure and your GitHub tokens protected.
+
 ## Configuration Options
 
 ### Environment Variables
@@ -398,15 +432,8 @@ After updating, you should:
 - `CLIENT_ORIGIN`: Origin for CORS (default: https://chat.openai.com)
 - `ENABLE_SSL`: Whether to enable HTTPS with Let's Encrypt
 - `EMAIL_ADDRESS`: Email for Let's Encrypt notifications
-
-## Secure Production Deployment
-
-For production deployments, consider:
-
-1. Always enable SSL (`ENABLE_SSL=true`)
-2. Use a strong, random session secret
-3. Set up proper firewalls to only expose necessary ports
-4. Use Docker secrets for sensitive information
+- `REDIS_PASSWORD`: Password for Redis connection security
+- `SESSION_SECRET`: Secret for session cookie encryption (auto-generated if not provided)
 
 ## Troubleshooting
 
@@ -457,7 +484,7 @@ If the server isn't working correctly:
 4. **Redis not starting:**
    ```bash
    # Check Redis logs
-   docker-compose exec server redis-cli ping
+   docker-compose exec server redis-cli -a "your-redis-password" ping
    
    # If Redis isn't responding, restart the container
    docker-compose restart server
@@ -478,3 +505,33 @@ If the extension isn't connecting to the server:
 1. Make sure the server URL is correctly set in the extension
 2. Check browser console for any JavaScript errors
 3. Ensure the extension has proper permissions
+4. Try downloading a fresh copy from the `/extension` endpoint
+
+### Security Issues
+
+If you encounter security-related issues:
+
+1. Check the security logs:
+   ```bash
+   docker-compose exec server cat /opt/chatgpt-github-integration/logs/security.log
+   ```
+
+2. Verify Fail2Ban is working:
+   ```bash
+   sudo fail2ban-client status chatgpt-github-nginx
+   ```
+
+3. Review security headers with an online tool like [SecurityHeaders.com](https://securityheaders.com)
+
+4. Run a security audit on dependencies:
+   ```bash
+   docker-compose exec server npm audit
+   ```
+
+## License
+
+[MIT License](./LICENSE)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
