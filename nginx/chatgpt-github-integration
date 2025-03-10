@@ -1,7 +1,33 @@
 server {
     listen 80;
     server_name your-server-domain.com;
+    return 301 https://$host$request_uri;
+}
 
+server {
+    listen 443 ssl http2;
+    server_name your-server-domain.com;
+
+    # SSL configuration with improved security
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # HSTS (15768000 seconds = 6 months)
+    add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; preload" always;
+    
+    # Additional security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Main proxy configuration
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -15,5 +41,16 @@ server {
         
         # Support larger file uploads
         client_max_body_size 10M;
+        
+        # Timeouts to prevent hanging connections
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+    
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        return 404;
     }
 }
