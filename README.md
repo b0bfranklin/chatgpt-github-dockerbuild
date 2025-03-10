@@ -113,7 +113,7 @@ brew install --cask docker
 ### Step 2: Clone this Repository
 
 ```bash
-git clone https://github.com/yourusername/chatgpt-github-integration.git
+git clone https://github.com/b0bfranklin/chatgpt-github-integration.git
 cd chatgpt-github-integration
 ```
 
@@ -224,7 +224,7 @@ For a fully automated deployment process, you can use the included `deploy.sh` s
 
 1. Download the script to your server:
    ```bash
-   curl -O https://raw.githubusercontent.com/yourusername/chatgpt-github-integration/main/deploy.sh
+   curl -O https://raw.githubusercontent.com/b0bfranklin/chatgpt-github-integration/main/deploy.sh
    chmod +x deploy.sh
    ```
 
